@@ -65,6 +65,7 @@ Comments:
 
 #define MAX_STRING	256
 #define MAX_LINE	1024
+#define INNER_BLOCKS 110
 
 typedef char String[MAX_STRING];
 typedef char Line[MAX_LINE];
@@ -372,12 +373,37 @@ Actor actorNew(Game g, ActorKind kind, int x, int y)
  * heroAnimation - The hero moves using the cursor keys
  * INCOMPLETE!
  ******************************************************************************/
+bool cellHasBlock(Game g, int xPos, int yPos){
+	if (g->world[xPos][yPos]->kind == BLOCK)
+	{
+		return true;
+	}
+	return false;
+	
+}
+bool push(Game g, Actor a, int nextXPos, int nextYPos){
+	if(cellIsEmpty(g, nextXPos,nextYPos)){
+		actorMove(g, a, nextXPos, nextYPos);
+		return true;
+	}
+	return false;	
+}
+Actor getBlock(Game g, int xPos, int yPos){
+	return g->world[xPos][yPos];
+}
 void heroAnimation(Game g, Actor a)
 {
 	int dx = tyKeyDeltaX(), dy = tyKeyDeltaY();
 	int nx = a->x + dx, ny = a->y + dy;
 	if (cellIsEmpty(g, nx, ny))
 		actorMove(g, a, nx, ny);
+	else if ( cellHasBlock(g, nx, ny) ){
+		Actor block = getBlock(g, nx, ny);
+		if (push(g, block, nx+dx, ny+dy)){
+			//actorMove(g, a, nx, ny);
+		}
+		
+	}
 }
 
 /******************************************************************************
@@ -388,6 +414,7 @@ void actorAnimation(Game g, Actor a)
 {
 	switch( a->kind ) {
 		case HERO: heroAnimation(g, a); break;
+		case BLOCK: 
 		default: break;
 	}
 }
@@ -428,6 +455,15 @@ bool positionIsValid(Game g, int xPos, int yPos){
 	}
 	else { return false;}
 }
+bool monsterIsClose(Game g, int xPos, int yPos){
+	for (int i = 0; i < N_MONSTERS; i++)
+	{
+		if (abs(g->monsters[i]->x - xPos) < 5  && abs(g->monsters[i]->y - yPos) < 5)
+		{ return true; }	
+	}
+	return false;
+
+}
 
 /******************************************************************************
  * gameInstallBlocks - Install the movable blocks
@@ -435,9 +471,21 @@ bool positionIsValid(Game g, int xPos, int yPos){
  ******************************************************************************/
 void gameInstallBlocks(Game g)
 {
+	int count = 0;
+	int xPos = tyRand(WORLD_SIZE_X);
+	int yPos = tyRand(WORLD_SIZE_Y);
+		
+	while (count < INNER_BLOCKS)
+	{
+		while(!positionIsValid(g, xPos, yPos)){
+			xPos = tyRand(WORLD_SIZE_X);
+			yPos = tyRand(WORLD_SIZE_Y);
+		}
+		Actor block = actorNew(g, BLOCK, xPos, yPos);
+		count++;
+	}
 	
 }
-
 /******************************************************************************
  * gameInstallMonsters - Install the monsters
  * INCOMPLETE!
@@ -455,14 +503,27 @@ void gameInstallMonsters(Game g)
 	}
 }
 
+
+
 /******************************************************************************
  * gameInstallHero - Install the hero
  * INCOMPLETE! This code is to change
  ******************************************************************************/
+
 void gameInstallHero(Game g)
 {
-
-	g->hero = actorNew(g, HERO, 10, 10);
+	bool placed = false;
+	int xPos = tyRand(WORLD_SIZE_X);
+	int yPos = tyRand(WORLD_SIZE_Y);
+	while (!placed)
+	{
+		while(!positionIsValid(g, xPos, yPos) && monsterIsClose(g, xPos,yPos)){
+			xPos = tyRand(WORLD_SIZE_X);
+			yPos = tyRand(WORLD_SIZE_Y);
+		}
+		placed = true;
+		g->hero = actorNew(g, HERO, xPos, yPos);
+	}
 }
 
 /******************************************************************************
