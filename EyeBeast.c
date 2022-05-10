@@ -414,6 +414,38 @@ void heroAnimation(Game g, Actor a)
 	}
 }
 
+
+void chaserAnimation(Game g,Actor a){
+
+	int chaserX = a->x;
+	int chaserY = a->y;
+	int heroX = g->hero->x;
+	int heroY = g->hero->y;
+	
+	if(abs(chaserX - heroX) > abs(chaserY - heroY) && chaserY != heroY){
+		if(chaserY > heroY)
+			 actorMove(g,a,chaserX,chaserY-1);
+		else 
+			actorMove(g,a,chaserX,chaserY+1);
+		
+	}
+	else{
+		if(chaserX > heroX) 
+			 actorMove(g,a,chaserX-1,chaserY);
+		else
+			actorMove(g,a,chaserX+1,chaserY);
+
+
+
+	}
+
+
+
+	
+
+}
+
+
 /******************************************************************************
  * actorAnimation - The actor behaves according to its kind
  * INCOMPLETE!
@@ -422,10 +454,16 @@ void actorAnimation(Game g, Actor a)
 {
 	switch( a->kind ) {
 		case HERO: heroAnimation(g, a); break;
-		case BLOCK: 
+		case BLOCK: //fazrer depois
+		break;
+		case CHASER : chaserAnimation(g,a);break;
+
 		default: break;
 	}
 }
+
+
+
 
 /******************************************************************************/
 /******************************************************************************/
