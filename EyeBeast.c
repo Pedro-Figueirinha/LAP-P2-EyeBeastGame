@@ -16,7 +16,7 @@ tab = 4 spaces
 
 
  AUTHORS IDENTIFICATION
-	Student 1: n, Guilherme Abrantes
+	Student 1: 60971, Guilherme Abrantes
 	Student 2: 61893, Pedro Figueirinha
 
 Comments:
@@ -42,7 +42,7 @@ Comments:
 
 #define APP_NAME	"Eye Beast"
 
-#define AUTHOR1		"Guilherme Abrantes (XXXXX)"
+#define AUTHOR1		"Guilherme Abrantes (60971)"
 #define AUTHOR2		"Pedro Figueirinha (61893)"
 
 /******************************************************************************/
@@ -381,16 +381,24 @@ bool cellHasBlock(Game g, int xPos, int yPos){
 	return false;
 	
 }
-bool push(Game g, Actor a, int nextXPos, int nextYPos){
+Actor getBlock(Game g, int xPos, int yPos){
+	return g->world[xPos][yPos];
+}
+bool push(Game g, Actor a, int dx, int dy, int nextXPos, int nextYPos){
 	if(cellIsEmpty(g, nextXPos,nextYPos)){
 		actorMove(g, a, nextXPos, nextYPos);
 		return true;
 	}
+	else if ( cellHasBlock(g, nextXPos, nextYPos)){
+		Actor block = getBlock(g, nextXPos, nextYPos);
+		if (push(g, block, dx, dy, nextXPos + dx, nextYPos + dy)){
+			actorMove(g, a, nextXPos, nextYPos);
+			return true;
+		}
+	}
 	return false;	
 }
-Actor getBlock(Game g, int xPos, int yPos){
-	return g->world[xPos][yPos];
-}
+
 void heroAnimation(Game g, Actor a)
 {
 	int dx = tyKeyDeltaX(), dy = tyKeyDeltaY();
@@ -399,8 +407,8 @@ void heroAnimation(Game g, Actor a)
 		actorMove(g, a, nx, ny);
 	else if ( cellHasBlock(g, nx, ny) ){
 		Actor block = getBlock(g, nx, ny);
-		if (push(g, block, nx+dx, ny+dy)){
-			//actorMove(g, a, nx, ny);
+		if (push(g, block, dx, dy, nx+dx, ny+dy)){
+			actorMove(g, a, nx, ny);
 		}
 		
 	}
