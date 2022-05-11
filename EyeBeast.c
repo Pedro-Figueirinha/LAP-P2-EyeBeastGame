@@ -5,30 +5,21 @@ tab = 4 spaces
 */
 
 /*	Linguagens e Ambientes de Programação - Projeto de 2021/2022
-
 	Eye Beast
-
 	Program written in C/C ++ over the wxWidget platform.
 	The wxWidget platform runs on Windows, MacOS and Linux.
-
 	This file is only a starting point fo your work. The entire file can
 	be changed, starting with this comment.
-
-
  AUTHORS IDENTIFICATION
-	Student 1: 60971, Guilherme Abrantes
+	Student 1: n, Guilherme Abrantes
 	Student 2: 61893, Pedro Figueirinha
-
 Comments:
-
 ?????????????????????????
 ?????????????????????????
 ?????????????????????????
 ?????????????????????????
 ?????????????????????????
 ?????????????????????????
-
-
  Place here the names and numbers of the authors, plus some comments, as
  asked in the listing of the project. Do not deliver an anonymous file with
  unknown authors.
@@ -42,7 +33,7 @@ Comments:
 
 #define APP_NAME	"Eye Beast"
 
-#define AUTHOR1		"Guilherme Abrantes (60971)"
+#define AUTHOR1		"Guilherme Abrantes (XXXXX)"
 #define AUTHOR2		"Pedro Figueirinha (61893)"
 
 /******************************************************************************/
@@ -260,7 +251,7 @@ typedef struct {
 } Hero;
 
 typedef struct {
-// specific fields can go here, but probably none will be needed
+int count;
 } Chaser;
 
 typedef struct {
@@ -288,6 +279,7 @@ typedef struct {
 #define WORLD_SIZE_X	31
 #define WORLD_SIZE_Y	18
 #define N_MONSTERS		5
+
 
 typedef struct {
 	Actor world[WORLD_SIZE_X][WORLD_SIZE_Y];
@@ -381,22 +373,33 @@ bool cellHasBlock(Game g, int xPos, int yPos){
 	return false;
 	
 }
+
 Actor getBlock(Game g, int xPos, int yPos){
 	return g->world[xPos][yPos];
 }
 bool push(Game g, Actor a, int dx, int dy, int nextXPos, int nextYPos){
+	if(a->kind = BLOCK){
 	if(cellIsEmpty(g, nextXPos,nextYPos)){
 		actorMove(g, a, nextXPos, nextYPos);
 		return true;
 	}
-	else if ( cellHasBlock(g, nextXPos, nextYPos)){
+	else if ( cellHasBlock(g, nextXPos, nextYPos) && a->kind != CHASER){
 		Actor block = getBlock(g, nextXPos, nextYPos);
 		if (push(g, block, dx, dy, nextXPos + dx, nextYPos + dy)){
 			actorMove(g, a, nextXPos, nextYPos);
 			return true;
 		}
 	}
-	return false;	
+	}
+
+	
+
+return false;	
+}
+void pushMonster(Game g,Actor a,int nx,int ny){
+	if(cellIsEmpty(g,nx,ny))
+		actorMove(g,a,nx,ny);
+
 }
 
 void heroAnimation(Game g, Actor a)
@@ -414,37 +417,56 @@ void heroAnimation(Game g, Actor a)
 	}
 }
 
+void swap(int* xp, int* yp)
+{
+    int temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+ 
+
+
 
 void chaserAnimation(Game g,Actor a){
+	
+	a->u.chaser.count++;
+	int count = a->u.chaser.count;
 
+if( count % 20 == 0){
 	int chaserX = a->x;
 	int chaserY = a->y;
 	int heroX = g->hero->x;
 	int heroY = g->hero->y;
-	
-	if(abs(chaserX - heroX) > abs(chaserY - heroY) && chaserY != heroY){
+
+	if(chaserX == heroX){
 		if(chaserY > heroY)
-			 actorMove(g,a,chaserX,chaserY-1);
-		else 
-			actorMove(g,a,chaserX,chaserY+1);
-		
-	}
-	else{
-		if(chaserX > heroX) 
-			 actorMove(g,a,chaserX-1,chaserY);
-		else
-			actorMove(g,a,chaserX+1,chaserY);
+			pushMonster(g,a,chaserX,chaserY-1);
+		else pushMonster(g,a,chaserX,chaserY+1);}
 
-
+	else if(chaserY == heroY){
+		if(chaserX > heroX)
+			pushMonster(g,a,chaserX-1,chaserY);
+		else pushMonster(g,a,chaserX+1,chaserY);
 
 	}
+	else if(heroY>chaserY && heroX>chaserX){
+		pushMonster(g,a,chaserX+1,chaserY+1);
+	}
+	else if(heroY<chaserY && heroX<chaserX){
+		pushMonster(g,a,chaserX-1,chaserY-1);
+	}
+	else if(heroY<chaserY && heroX>chaserX){
+		pushMonster(g,a,chaserX+1,chaserY-1);
+	}
+	else if(heroY>chaserY && heroX<chaserX){
+		pushMonster(g,a,chaserX-1,chaserY+1);
+	}
 
 
 
-	
 
+	}
 }
-
 
 /******************************************************************************
  * actorAnimation - The actor behaves according to its kind
@@ -452,16 +474,18 @@ void chaserAnimation(Game g,Actor a){
  ******************************************************************************/
 void actorAnimation(Game g, Actor a)
 {
+
 	switch( a->kind ) {
 		case HERO: heroAnimation(g, a); break;
 		case BLOCK: //fazrer depois
 		break;
-		case CHASER : chaserAnimation(g,a);break;
+		case CHASER : 
+		
+		chaserAnimation(g,a);break;
 
 		default: break;
 	}
 }
-
 
 
 
@@ -504,7 +528,7 @@ bool positionIsValid(Game g, int xPos, int yPos){
 bool monsterIsClose(Game g, int xPos, int yPos){
 	for (int i = 0; i < N_MONSTERS; i++)
 	{
-		if (abs(g->monsters[i]->x - xPos) < 5  && abs(g->monsters[i]->y - yPos) < 5)
+		if (abs(g->monsters[i]->x - xPos) > 5  && abs(g->monsters[i]->y - yPos) > 5)
 		{ return true; }	
 	}
 	return false;
@@ -558,18 +582,20 @@ void gameInstallMonsters(Game g)
 
 void gameInstallHero(Game g)
 {
-	bool placed = false;
+
 	int xPos = tyRand(WORLD_SIZE_X);
 	int yPos = tyRand(WORLD_SIZE_Y);
-	while (!placed)
-	{
-		while(!positionIsValid(g, xPos, yPos) && monsterIsClose(g, xPos,yPos)){
+
+	
+		while(!positionIsValid(g, xPos, yPos) && monsterIsClose(g, xPos,yPos) && getBlock(g,xPos,yPos)->kind != BOUNDARY){
 			xPos = tyRand(WORLD_SIZE_X);
 			yPos = tyRand(WORLD_SIZE_Y);
 		}
-		placed = true;
+		
+	
 		g->hero = actorNew(g, HERO, xPos, yPos);
-	}
+	
+	
 }
 
 /******************************************************************************
@@ -610,8 +636,11 @@ void gameRedraw(Game g)
 ******************************************************************************/
 void gameAnimation(Game g) {
 	actorAnimation(g, g->hero);
-//	for(int i = 0 ; i < N_MONSTERS ; i++)
-//		actorAnimation(g, g->monsters[i]);		
+
+
+
+	for(int i = 0 ; i < N_MONSTERS ; i++)
+		actorAnimation(g, g->monsters[i]);		
 }
 
 
@@ -782,4 +811,3 @@ void tyHandleStart(void)
 	tySecondsSetZero();
 	game = gameInit(game);
 }
-
