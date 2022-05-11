@@ -267,7 +267,8 @@ typedef struct {
 	ActorKind kind;
 	int x, y;
 	Image image;
-	bool isDeadly;
+	bool isTasty;
+	bool isMovable;
 	union {
 // specific fields for each kind
 		Hero hero;
@@ -358,10 +359,25 @@ Actor actorNew(Game g, ActorKind kind, int x, int y)
 	switch (a->kind)
 	{
 	case CHASER:
-		a->isDeadly = true;
-		break;
+		a->isMovable = false;
+		a->isTasty = false;
+	break;
+	case HERO:
+		a->isMovable = false;
+		a->isTasty = true;
+	break;
+	case BLOCK:
+		a->isMovable = true;
+		a->isTasty = false;
+	break;
+	case BOUNDARY:
+		a->isMovable = false;
+		a->isTasty=false;
+	break;
 	default:
-		a->isDeadly = false;
+		a->isMovable = false;
+		a->isTasty=false;
+		
 		break;
 	}
 	a->x = x;
@@ -383,26 +399,20 @@ bool cellHasBlock(Game g, int xPos, int yPos){
 	return false;
 	
 }
-bool cellHasMonster(Game g, int xPos, int yPos){
-	if (g->world[xPos][yPos]->isDeadly)
-	{
-		return true;
-	}
-	return false;	
-}
 
-Actor getBlock(Game g, int xPos, int yPos){
+
+Actor getActor(Game g, int xPos, int yPos){
 	return g->world[xPos][yPos];
 }
 bool push(Game g, Actor a, int dx, int dy, int nextXPos, int nextYPos){
-	if(a->kind = BLOCK){
-	if(cellIsEmpty(g, nextXPos,nextYPos)){
-		actorMove(g, a, nextXPos, nextYPos);
-		return true;
-	}
-	else if ( cellHasBlock(g, nextXPos, nextYPos) && a->kind != CHASER){
-		Actor block = getBlock(g, nextXPos, nextYPos);
-		if (push(g, block, dx, dy, nextXPos + dx, nextYPos + dy)){
+	if(a->isMovable){
+		if(cellIsEmpty(g, nextXPos,nextYPos)){
+			actorMove(g, a, nextXPos, nextYPos);
+			return true;
+		}
+		else if ( cellHasBlock(g, nextXPos, nextYPos) && a->isMovable){
+			Actor block = getActor(g, nextXPos, nextYPos);
+			if (push(g, block, dx, dy, nextXPos + dx, nextYPos + dy)){
 			actorMove(g, a, nextXPos, nextYPos);
 			return true;
 		}
@@ -413,9 +423,17 @@ bool push(Game g, Actor a, int dx, int dy, int nextXPos, int nextYPos){
 
 return false;	
 }
-void pushMonster(Game g,Actor a,int nx,int ny){
+bool pushMonster(Game g,Actor a,int nx,int ny){
 	if(cellIsEmpty(g,nx,ny))
 		actorMove(g,a,nx,ny);
+	else{Actor b = getActor(g,nx,ny);
+		 if(b->isTasty){
+			actorMove(g,a,nx,ny);
+			tyAlertDialog("You Lost", "See you later!");
+			tyQuit();
+		 }
+	}
+	
 
 }
 
@@ -426,7 +444,7 @@ void heroAnimation(Game g, Actor a)
 	if (cellIsEmpty(g, nx, ny))
 		actorMove(g, a, nx, ny);
 	else if ( cellHasBlock(g, nx, ny) ){
-		Actor block = getBlock(g, nx, ny);
+		Actor block = getActor(g, nx, ny);
 		if (push(g, block, dx, dy, nx+dx, ny+dy)){
 			actorMove(g, a, nx, ny);
 		}
@@ -440,11 +458,9 @@ void swap(int* xp, int* yp)
     *xp = *yp;
     *yp = temp;
 }
- 
 
 
-
-void chaserAnimation(Game g,Actor a){
+bool chaserAnimation(Game g,Actor a){
 	
 	a->u.chaser.count++;
 	int count = a->u.chaser.count;
@@ -478,10 +494,6 @@ if( count % 20 == 0){
 	else if(heroY>chaserY && heroX<chaserX){
 		pushMonster(g,a,chaserX-1,chaserY+1);
 	}
-
-
-
-
 	}
 }
 
@@ -543,12 +555,13 @@ bool positionIsValid(Game g, int xPos, int yPos){
 	else { return false;}
 }
 bool monsterIsClose(Game g, int xPos, int yPos){
+	bool aux = false;
 	for (int i = 0; i < N_MONSTERS; i++)
 	{
-		if (abs(g->monsters[i]->x - xPos) > 5  && abs(g->monsters[i]->y - yPos) > 5)
-		{ return true; }	
+		if (abs(g->monsters[i]->x - xPos) < 5  && abs(g->monsters[i]->y - yPos) < 5)
+		{ aux = true; }	
 	}
-	return false;
+	return aux;
 
 }
 
@@ -604,11 +617,10 @@ void gameInstallHero(Game g)
 	int yPos = tyRand(WORLD_SIZE_Y);
 
 	
-		while(!positionIsValid(g, xPos, yPos) && monsterIsClose(g, xPos,yPos) && getBlock(g,xPos,yPos)->kind != BOUNDARY){
+		while(!positionIsValid(g, xPos, yPos) && monsterIsClose(g, xPos,yPos)){
 			xPos = tyRand(WORLD_SIZE_X);
 			yPos = tyRand(WORLD_SIZE_Y);
-		}
-		
+		}	
 	
 		g->hero = actorNew(g, HERO, xPos, yPos);
 	
@@ -645,7 +657,15 @@ void gameRedraw(Game g)
 				actorShow(g, a);
 		}
 }
+bool canMove(Game g,Actor a){
+	if(cellIsEmpty(g,a->x+1,a->y) || cellIsEmpty(g,a->x,a->y+1) || cellIsEmpty(g,a->x-1,a->y) || cellIsEmpty(g,a->x,a->y-1)
+	|| cellIsEmpty(g,a->x+1,a->y+1) || cellIsEmpty(g,a->x+1,a->y-1) || cellIsEmpty(g,a->x-1,a->y+1) || cellIsEmpty(g,a->x-1,a->y-1)
+	) return true;
 
+	else return false;
+
+
+}
 /******************************************************************************
  * gameAnimation - Sends animation events to all the animated actors
  * This function is called every tenth of a second (more or less...)
@@ -654,10 +674,28 @@ void gameRedraw(Game g)
 void gameAnimation(Game g) {
 	actorAnimation(g, g->hero);
 
-
+	bool all[N_MONSTERS];
+	for(int i = 0;i<N_MONSTERS;i++)
+		all[i] = false;
 
 	for(int i = 0 ; i < N_MONSTERS ; i++)
-		actorAnimation(g, g->monsters[i]);		
+		if(canMove(g,g->monsters[i])){
+		actorAnimation(g, g->monsters[i]);
+		all[i] = true;
+	
+		}	
+	bool end = true;
+
+	for(int i = 0;i<N_MONSTERS;i++)
+		if(all[i] == true)
+			end = false;
+	
+	if(end){
+		tyAlertDialog("You Win", "See you later!");
+			tyQuit();
+	}
+		
+	
 }
 
 
