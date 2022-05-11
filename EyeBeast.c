@@ -11,7 +11,7 @@ tab = 4 spaces
 	This file is only a starting point fo your work. The entire file can
 	be changed, starting with this comment.
  AUTHORS IDENTIFICATION
-	Student 1: n, Guilherme Abrantes
+	Student 1: 60971, Guilherme Abrantes
 	Student 2: 61893, Pedro Figueirinha
 Comments:
 ?????????????????????????
@@ -33,7 +33,7 @@ Comments:
 
 #define APP_NAME	"Eye Beast"
 
-#define AUTHOR1		"Guilherme Abrantes (XXXXX)"
+#define AUTHOR1		"Guilherme Abrantes (60971)"
 #define AUTHOR2		"Pedro Figueirinha (61893)"
 
 /******************************************************************************/
