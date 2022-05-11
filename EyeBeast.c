@@ -267,6 +267,7 @@ typedef struct {
 	ActorKind kind;
 	int x, y;
 	Image image;
+	bool isDeadly;
 	union {
 // specific fields for each kind
 		Hero hero;
@@ -354,6 +355,15 @@ Actor actorNew(Game g, ActorKind kind, int x, int y)
 {
 	Actor a = malloc(sizeof(ActorStruct));
 	a->kind = kind;
+	switch (a->kind)
+	{
+	case CHASER:
+		a->isDeadly = true;
+		break;
+	default:
+		a->isDeadly = false;
+		break;
+	}
 	a->x = x;
 	a->y = y;
 	a->image = actorImage(kind);
@@ -372,6 +382,13 @@ bool cellHasBlock(Game g, int xPos, int yPos){
 	}
 	return false;
 	
+}
+bool cellHasMonster(Game g, int xPos, int yPos){
+	if (g->world[xPos][yPos]->isDeadly)
+	{
+		return true;
+	}
+	return false;	
 }
 
 Actor getBlock(Game g, int xPos, int yPos){
