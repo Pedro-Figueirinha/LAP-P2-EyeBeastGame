@@ -280,13 +280,16 @@ typedef struct {
 
 #define WORLD_SIZE_X	31
 #define WORLD_SIZE_Y	18
-#define N_MONSTERS		5
-
+#define N_MONSTERS		20
+	int currentLevel = 1;
+	int currentMonsters = 5;
 
 typedef struct {
 	Actor world[WORLD_SIZE_X][WORLD_SIZE_Y];
 	Actor hero;
 	Actor monsters[N_MONSTERS];
+	
+
 } GameStruct, *Game;
 
 /******************************************************************************
@@ -465,7 +468,7 @@ bool chaserAnimation(Game g,Actor a){
 	a->u.chaser.count++;
 	int count = a->u.chaser.count;
 
-if( count % 20 == 0){
+if( count % 1000 == 0){
 	int chaserX = a->x;
 	int chaserY = a->y;
 	int heroX = g->hero->x;
@@ -555,13 +558,13 @@ bool positionIsValid(Game g, int xPos, int yPos){
 	else { return false;}
 }
 bool monsterIsClose(Game g, int xPos, int yPos){
-	bool aux = false;
-	for (int i = 0; i < N_MONSTERS; i++)
+	
+	for (int i = 0; i < currentMonsters; i++)
 	{
 		if (abs(g->monsters[i]->x - xPos) < 5  && abs(g->monsters[i]->y - yPos) < 5)
-		{ aux = true; }	
+		return true;
 	}
-	return aux;
+	return false;
 
 }
 
@@ -592,7 +595,8 @@ void gameInstallBlocks(Game g)
  ******************************************************************************/
 void gameInstallMonsters(Game g)
 {
-	for(int i = 0; i < N_MONSTERS; i++){
+	
+	for(int i = 0; i < currentMonsters; i++){
 		int xPos = tyRand(WORLD_SIZE_X);
 		int yPos = tyRand(WORLD_SIZE_Y);
 		while(!positionIsValid(g, xPos, yPos)){
@@ -601,6 +605,8 @@ void gameInstallMonsters(Game g)
 		}
 		g->monsters[i] = actorNew(g, CHASER,  xPos, yPos);
 	}
+	
+	
 }
 
 
@@ -616,14 +622,24 @@ void gameInstallHero(Game g)
 	int xPos = tyRand(WORLD_SIZE_X);
 	int yPos = tyRand(WORLD_SIZE_Y);
 
-	
-		while(!positionIsValid(g, xPos, yPos) && monsterIsClose(g, xPos,yPos)){
+	int condition = 1;
+		while(condition != 0){
+
+			if(monsterIsClose(g,xPos,yPos) ){
 			xPos = tyRand(WORLD_SIZE_X);
 			yPos = tyRand(WORLD_SIZE_Y);
+			}
+			else if (!cellIsEmpty(g, xPos, yPos)){
+			xPos = tyRand(WORLD_SIZE_X);
+			yPos = tyRand(WORLD_SIZE_Y);
+
+			}
+			else condition = 0;
 		}	
 	
 		g->hero = actorNew(g, HERO, xPos, yPos);
 	
+
 	
 }
 
@@ -674,11 +690,11 @@ bool canMove(Game g,Actor a){
 void gameAnimation(Game g) {
 	actorAnimation(g, g->hero);
 
-	bool all[N_MONSTERS];
-	for(int i = 0;i<N_MONSTERS;i++)
+	bool all[currentMonsters];
+	for(int i = 0;i<currentMonsters;i++)
 		all[i] = false;
 
-	for(int i = 0 ; i < N_MONSTERS ; i++)
+	for(int i = 0 ; i < currentMonsters ; i++)
 		if(canMove(g,g->monsters[i])){
 		actorAnimation(g, g->monsters[i]);
 		all[i] = true;
@@ -686,13 +702,16 @@ void gameAnimation(Game g) {
 		}	
 	bool end = true;
 
-	for(int i = 0;i<N_MONSTERS;i++)
+	for(int i = 0;i<currentMonsters;i++)
 		if(all[i] == true)
 			end = false;
 	
 	if(end){
 		tyAlertDialog("You Win", "See you later!");
-			tyQuit();
+		currentLevel++;
+		currentMonsters++;
+		tyHandleStart();
+			
 	}
 		
 	
