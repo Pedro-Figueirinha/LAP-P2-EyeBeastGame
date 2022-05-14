@@ -15,6 +15,7 @@ tab = 4 spaces
 	Student 2: 61893, Pedro Figueirinha
 Comments:
 Extra functionality: Extra levels, each level has one more monster than the previous level. Level 1 starts with 5 monsters
+final level is 5
  Place here the names and numbers of the authors, plus some comments, as
  asked in the listing of the project. Do not deliver an anonymous file with
  unknown authors.
@@ -276,11 +277,12 @@ typedef struct {
 
 #define WORLD_SIZE_X	31
 #define WORLD_SIZE_Y	18
-#define N_MONSTERS		20
-	int currentLevel = 1;
-	int currentMonsters = 5;
+#define N_MONSTERS		10
+
 
 typedef struct {
+	int currentLevel ;
+	int currentMonsters; 
 	Actor world[WORLD_SIZE_X][WORLD_SIZE_Y];
 	Actor hero;
 	Actor monsters[N_MONSTERS];
@@ -428,8 +430,12 @@ bool pushMonster(Game g,Actor a,int nx,int ny){
 	else{Actor b = getActor(g,nx,ny);
 		 if(b->isTasty){
 			actorMove(g,a,nx,ny);
-			tyAlertDialog("You Lost", "See you later!");
-			tyQuit();
+			tyAlertDialog("You Lost", "Try again");
+			//back to level 1
+			g->currentMonsters = 5;
+			g->currentLevel = 1;
+			tyHandleStart();
+			
 		 }
 	}
 	
@@ -451,12 +457,7 @@ void heroAnimation(Game g, Actor a)
 	}
 }
 
-void swap(int* xp, int* yp)
-{
-    int temp = *xp;
-    *xp = *yp;
-    *yp = temp;
-}
+
 
 
 bool chaserAnimation(Game g,Actor a){
@@ -464,7 +465,7 @@ bool chaserAnimation(Game g,Actor a){
 	a->u.chaser.count++;
 	int count = a->u.chaser.count;
 
-if( count % 1000 == 0){
+if( count % 10 == 0){
 	int chaserX = a->x;
 	int chaserY = a->y;
 	int heroX = g->hero->x;
@@ -552,7 +553,7 @@ bool positionIsValid(Game g, int xPos, int yPos){
 }
 bool monsterIsClose(Game g, int xPos, int yPos){
 	
-	for (int i = 0; i < currentMonsters; i++)
+	for (int i = 0; i < g->currentMonsters; i++)
 	{
 		if (abs(g->monsters[i]->x - xPos) < 5  && abs(g->monsters[i]->y - yPos) < 5)
 		return true;
@@ -589,7 +590,7 @@ void gameInstallBlocks(Game g)
 void gameInstallMonsters(Game g)
 {
 	
-	for(int i = 0; i < currentMonsters; i++){
+	for(int i = 0; i < g->currentMonsters; i++){
 		int xPos = tyRand(WORLD_SIZE_X);
 		int yPos = tyRand(WORLD_SIZE_Y);
 		while(!positionIsValid(g, xPos, yPos)){
@@ -641,8 +642,11 @@ void gameInstallHero(Game g)
  ******************************************************************************/
 Game gameInit(Game g)
 {
-	if (g == NULL)
+	if (g == NULL){
 		g = malloc(sizeof(GameStruct));
+		g->currentLevel = 1;
+		g->currentMonsters = 5;
+		}
 	imagesCreate();
 	gameClearWorld(g);
 	gameInstallBoundaries(g);
@@ -683,11 +687,11 @@ bool canMove(Game g,Actor a){
 void gameAnimation(Game g) {
 	actorAnimation(g, g->hero);
 
-	bool all[currentMonsters];
-	for(int i = 0;i<currentMonsters;i++)
+	bool all[g->currentMonsters];
+	for(int i = 0;i<g->currentMonsters;i++)
 		all[i] = false;
 
-	for(int i = 0 ; i < currentMonsters ; i++)
+	for(int i = 0 ; i < g->currentMonsters ; i++)
 		if(canMove(g,g->monsters[i])){
 		actorAnimation(g, g->monsters[i]);
 		all[i] = true;
@@ -695,15 +699,15 @@ void gameAnimation(Game g) {
 		}	
 	bool end = true;
 
-	for(int i = 0;i<currentMonsters;i++)
+	for(int i = 0;i<g->currentMonsters;i++)
 		if(all[i] == true)
 			end = false;
 	
 	if(end){
 	
-		currentLevel++;
-		currentMonsters++;
-		if(currentLevel == 15){
+		g->currentLevel++;
+		g->currentMonsters++;
+		if(g->currentLevel == 6){
 			tyAlertDialog("You beat the game", "See you later!");
 			tyQuit();
 		}
